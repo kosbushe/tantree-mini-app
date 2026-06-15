@@ -9,7 +9,7 @@ interface TantreeOfficialLogoProps {
 export function TantreeOfficialLogo({ className }: TantreeOfficialLogoProps) {
   return (
     <div
-      className={`tantree-official-logo flex w-full items-center justify-center ${className ?? ""}`}
+      className={`flex h-full w-full items-center justify-center ${className ?? ""}`}
       aria-label="TANTREE"
     >
       <Image
@@ -19,8 +19,8 @@ export function TantreeOfficialLogo({ className }: TantreeOfficialLogoProps) {
         height={661}
         priority
         unoptimized
-        className="tantree-deck-hero home-hero-deck object-contain"
-        sizes="92vw"
+        className="max-h-[calc(100dvh-12rem)] w-full object-contain"
+        sizes="96vw"
       />
     </div>
   );

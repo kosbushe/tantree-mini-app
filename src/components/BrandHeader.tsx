@@ -1,6 +1,12 @@
-export function HomeAuthorCredit() {
+interface HomeAuthorCreditProps {
+  className?: string;
+}
+
+export function HomeAuthorCredit({ className = "" }: HomeAuthorCreditProps) {
   return (
-    <p className="home-author brand-header__author font-raleway text-[0.62rem] font-extralight uppercase tracking-[0.42em] text-gold-muted">
+    <p
+      className={`w-full text-center font-raleway text-xs font-light uppercase tracking-[0.34em] text-[#8f7a4f] ${className}`}
+    >
       by Ksenia Bushe
     </p>
   );

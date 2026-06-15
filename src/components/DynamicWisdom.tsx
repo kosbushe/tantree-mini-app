@@ -15,14 +15,14 @@ export function DynamicWisdom({ cards, compact = false }: DynamicWisdomProps) {
 
   if (compact) {
     return (
-      <div className="home-wisdom dynamic-wisdom w-full max-w-sm px-2 text-center">
-        <p className="font-raleway text-[0.72rem] italic leading-relaxed text-gold/60">
+      <footer className="w-full text-center">
+        <p className="font-raleway text-xs italic leading-relaxed text-zinc-500">
           «{wisdom.quote}»
         </p>
-        <cite className="mt-1.5 block font-raleway text-[0.52rem] font-extralight not-italic uppercase tracking-[0.32em] text-gold-muted/55">
+        <cite className="mt-1.5 block font-raleway text-[0.65rem] font-light not-italic uppercase tracking-[0.28em] text-zinc-600">
           — {wisdom.author}
         </cite>
-      </div>
+      </footer>
     );
   }
 

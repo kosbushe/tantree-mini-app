@@ -21,11 +21,15 @@ export function Deck({
       onClick={onDraw}
       disabled={isDrawing || disabled}
       aria-label="Вытянуть карту из колоды"
-      className={`group relative focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 disabled:cursor-not-allowed disabled:opacity-60 ${
-        isHome ? "home-deck-shell card-tarot-shell" : "card-tarot-shell mt-8 mb-10"
-      }`}
+      className={
+        isHome
+          ? "group relative aspect-[2/3] h-auto max-h-[calc(100dvh-12rem)] w-[min(96vw,calc((100dvh-12rem)*2/3))] shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a059]/50 disabled:cursor-not-allowed disabled:opacity-60"
+          : "card-tarot-shell group relative mt-8 mb-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 disabled:cursor-not-allowed disabled:opacity-60"
+      }
     >
-      <span className="deck-shadow absolute inset-0 rounded-[1.35rem] bg-gold/10 blur-2xl" />
+      {!isHome ? (
+        <span className="deck-shadow absolute inset-0 rounded-[1.35rem] bg-gold/10 blur-2xl" />
+      ) : null}
 
       <span className="deck-card deck-card--back card-back-surface absolute inset-0 w-full overflow-hidden rounded-[1.35rem]">
         <CardBackFace compact />

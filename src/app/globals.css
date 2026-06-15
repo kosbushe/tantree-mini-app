@@ -19,7 +19,7 @@
 }
 
 body {
-  background: var(--background);
+  background: #000000;
   color: var(--foreground);
   font-family: var(--font-raleway), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -116,65 +116,6 @@ body {
 
 .tantree-official-logo {
   background: transparent;
-}
-
-.home-screen {
-  overflow: hidden;
-}
-
-.home-screen-top {
-  min-height: 0;
-}
-
-.home-deck-stage {
-  flex: 1;
-  min-height: 0;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.home-hero-deck,
-.tantree-deck-hero {
-  height: min(78dvh, calc(100vw * 661 / 1024));
-  width: auto;
-  max-width: 100vw;
-  filter:
-    drop-shadow(0 10px 32px rgba(0, 0, 0, 0.65))
-    drop-shadow(0 4px 18px rgba(197, 160, 89, 0.14));
-}
-
-.home-deck-shell.card-tarot-shell {
-  width: min(94vw, calc(78dvh * 2 / 3));
-  max-height: 78dvh;
-}
-
-.home-meta {
-  animation: brand-enter 1s ease-out 0.15s both;
-  flex-shrink: 0;
-}
-
-.home-wisdom-wrap {
-  animation: brand-enter 1s ease-out 0.3s both;
-  flex-shrink: 0;
-}
-
-.home-deck-hint {
-  animation: hint-shimmer 3.5s ease-in-out infinite;
-}
-
-@media (min-width: 768px) {
-  .home-hero-deck,
-  .tantree-deck-hero {
-    height: min(78dvh, 520px);
-    max-width: 800px;
-  }
-
-  .home-deck-shell.card-tarot-shell {
-    width: 420px;
-    max-height: 78dvh;
-  }
 }
 
 .card-completion {
@@ -368,8 +309,6 @@ body {
   .deck-shadow,
   .brand-header__tagline,
   .brand-header__author,
-  .home-meta,
-  .home-wisdom-wrap,
   .card-experience,
   .card-text-overlay,
   .cooldown-timer,

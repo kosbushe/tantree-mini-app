@@ -38,7 +38,7 @@ export default function RootLayout({
       lang="ru"
       className={`${montserrat.variable} ${raleway.variable} h-full bg-black antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-black text-zinc-100">
+      <body className="flex h-dvh max-h-dvh flex-col overflow-hidden bg-[#000000] text-zinc-100">
         {children}
       </body>
     </html>

@@ -217,60 +217,66 @@ export function Game({ cards }: GameProps) {
   const isOpening = isDrawing;
 
   return (
-    <div className="home-screen relative flex min-h-dvh flex-col items-center bg-black px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-[max(0.25rem,env(safe-area-inset-top))]">
+    <div className="flex h-dvh max-h-dvh w-full flex-col items-center overflow-hidden bg-[#000000] px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-[max(0.375rem,env(safe-area-inset-top))]">
       {isMockMode ? (
-        <p className="absolute right-4 top-[max(0.35rem,env(safe-area-inset-top))] z-10 font-raleway text-[0.48rem] font-extralight uppercase tracking-[0.22em] text-gold-muted/40">
+        <p className="absolute right-4 top-[max(0.5rem,env(safe-area-inset-top))] z-10 font-raleway text-[0.48rem] font-light uppercase tracking-[0.22em] text-zinc-700">
           mock
         </p>
       ) : null}
 
-      <div className="home-screen-top flex w-full max-w-md flex-1 flex-col items-center">
-        <div className="home-deck-stage">
-          {isLoading ? (
-            <p className="font-raleway text-xs font-extralight uppercase tracking-[0.2em] text-zinc-500">
-              Загрузка...
-            </p>
-          ) : null}
+      <main className="flex min-h-0 w-full flex-1 flex-col items-center">
+        {isLoading ? (
+          <p className="m-auto font-raleway text-xs font-light uppercase tracking-[0.2em] text-zinc-600">
+            Загрузка...
+          </p>
+        ) : (
+          <>
+            <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center px-1">
+              <div className="flex shrink-0 flex-col items-center">
+                {status?.canDraw ? (
+                  <Deck
+                    variant="home"
+                    onDraw={handleDraw}
+                    isDrawing={isDrawing}
+                  />
+                ) : (
+                  <TantreeOfficialLogo className="w-full max-w-[96vw]" />
+                )}
 
-          {!isLoading && status?.canDraw ? (
-            <Deck
-              variant="home"
-              onDraw={handleDraw}
-              isDrawing={isDrawing}
-            />
-          ) : null}
+                <HomeAuthorCredit className="mt-4" />
+              </div>
+            </div>
 
-          {!isLoading && !status?.canDraw ? <TantreeOfficialLogo /> : null}
-        </div>
+            <div className="flex w-full max-w-md shrink-0 flex-col items-center pb-2">
+              {error ? (
+                <p className="mt-1.5 text-center text-xs text-red-400/90">
+                  {error}
+                </p>
+              ) : null}
 
-        <div className="home-meta mt-1 flex w-full flex-col items-center gap-1.5">
-          <HomeAuthorCredit />
+              {canOpenCard ? (
+                <button
+                  type="button"
+                  onClick={handleOpenCard}
+                  disabled={isOpening}
+                  className="mt-3 w-full max-w-[300px] rounded-full border border-[#c5a059]/55 bg-[#c5a059]/12 px-6 py-3 font-raleway text-xs font-normal uppercase tracking-[0.2em] text-[#f5e6c8] shadow-[0_4px_24px_rgba(197,160,89,0.18),inset_0_1px_0_rgba(255,255,255,0.06)] transition-all hover:border-[#c5a059]/80 hover:bg-[#c5a059]/20 active:scale-[0.98] disabled:opacity-50"
+                >
+                  {isOpening ? "Карта открывается..." : "Открыть честную карту"}
+                </button>
+              ) : null}
 
-          {!isLoading && error ? (
-            <p className="text-center text-xs text-red-300/80">{error}</p>
-          ) : null}
-
-          {!isLoading && canOpenCard ? (
-            <button
-              type="button"
-              onClick={handleOpenCard}
-              disabled={isOpening}
-              className="home-open-card rounded-full border border-gold/32 bg-gold/[0.07] px-6 py-2.5 font-raleway text-[0.58rem] font-extralight uppercase tracking-[0.26em] text-gold transition-colors hover:border-gold/50 hover:bg-gold/[0.12] disabled:opacity-50"
-            >
-              {isOpening ? "Карта открывается..." : "Открыть честную карту"}
-            </button>
-          ) : null}
-
-          {!isLoading && status?.canDraw ? (
-            <p className="home-deck-hint font-raleway text-[0.54rem] font-extralight uppercase tracking-[0.24em] text-gold-muted/45">
-              или коснись колоды
-            </p>
-          ) : null}
-        </div>
-      </div>
+              {status?.canDraw ? (
+                <p className="mt-1.5 font-raleway text-[0.55rem] font-light uppercase tracking-[0.22em] text-zinc-600">
+                  или коснись колоды
+                </p>
+              ) : null}
+            </div>
+          </>
+        )}
+      </main>
 
       {!isLoading ? (
-        <div className="home-wisdom-wrap w-full max-w-sm shrink-0 px-2 pb-0.5 pt-1">
+        <div className="w-full max-w-sm shrink-0 px-2 pb-0.5">
           <DynamicWisdom cards={cards} compact />
         </div>
       ) : null}
