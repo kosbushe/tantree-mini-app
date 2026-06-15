@@ -22,14 +22,49 @@ interface CardExperienceProps {
   showDevReset?: boolean;
 }
 
+const PRIMARY_CTA_CLASS =
+  "mx-auto flex w-full max-w-[280px] items-center justify-center rounded-full border border-[#c5a059]/55 bg-[#c5a059]/12 px-6 py-3 text-center font-raleway text-xs font-normal uppercase tracking-[0.18em] text-[#f5e6c8] shadow-[0_4px_24px_rgba(197,160,89,0.18),inset_0_1px_0_rgba(255,255,255,0.06)] transition-all hover:border-[#c5a059]/80 hover:bg-[#c5a059]/20 active:scale-[0.98]";
+
 function PracticeList({ practice }: { practice: string }) {
+  const lines = practice
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const intro: string[] = [];
+  const bullets: string[] = [];
+
+  for (const line of lines) {
+    if (line.startsWith("•")) {
+      bullets.push(line.replace(/^•\s*/, ""));
+    } else {
+      intro.push(line);
+    }
+  }
+
   return (
-    <div className="space-y-2.5 text-sm leading-relaxed text-zinc-200/90">
-      {practice.split("\n").map((line, index) => {
-        const trimmed = line.trim();
-        if (!trimmed) return null;
-        return <p key={index}>{trimmed}</p>;
-      })}
+    <div className="break-words text-left text-base leading-loose text-zinc-100/95">
+      {intro.map((paragraph, index) => (
+        <p key={`intro-${index}`} className="mb-4 last:mb-0">
+          {paragraph}
+        </p>
+      ))}
+
+      {bullets.length > 0 ? (
+        <ul className="mt-1 space-y-3">
+          {bullets.map((item, index) => (
+            <li key={`step-${index}`} className="flex gap-3">
+              <span
+                aria-hidden
+                className="mt-2.5 shrink-0 text-sm leading-none text-[#c5a059]/80"
+              >
+                •
+              </span>
+              <span className="flex-1">{item}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </div>
   );
 }
@@ -43,10 +78,10 @@ function CardArtPlaceholder({
 }) {
   return (
     <div className="card-art-face card-art-face--placeholder flex h-full w-full flex-col items-center justify-center px-6 text-center">
-      <p className="font-montserrat text-[0.55rem] font-extralight uppercase tracking-[0.35em] text-gold-muted/70">
+      <p className="font-montserrat text-xs font-extralight uppercase tracking-[0.35em] text-gold-muted/70">
         Карта {cardId}
       </p>
-      <p className="font-montserrat mt-3 text-xl font-extralight tracking-[0.1em] text-gold">
+      <p className="font-montserrat mt-3 text-2xl font-extralight tracking-[0.1em] text-gold">
         {title}
       </p>
     </div>
@@ -193,77 +228,81 @@ export function CardExperience({
                 <div className="absolute inset-0 bg-black/88 backdrop-blur-md" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/82 to-black/55" />
 
-                <div className="card-text-overlay__content relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-5">
-                  <p className="font-montserrat text-[0.55rem] font-extralight uppercase tracking-[0.35em] text-gold-muted/75">
+                <div className="card-text-overlay__content relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-6 py-6 text-left">
+                  <p className="font-montserrat text-xs font-extralight uppercase tracking-[0.35em] text-gold-muted/80">
                     Карта {card.id}
                   </p>
-                  <h2 className="font-montserrat mt-2 text-xl font-extralight tracking-[0.1em] text-gold sm:text-2xl">
+                  <h2 className="font-montserrat mt-2 text-2xl font-light tracking-[0.08em] text-gold sm:text-3xl">
                     {card.title}
                   </h2>
 
-                  <blockquote className="mt-4 border-l border-gold/30 pl-3">
-                    <p className="text-[0.82rem] italic leading-relaxed text-zinc-100/95 sm:text-sm">
+                  <blockquote className="mt-5 border-l-2 border-gold/35 pl-4">
+                    <p className="break-words text-base italic leading-relaxed text-zinc-100/95">
                       «{card.quote}»
                     </p>
-                    <cite className="mt-2 block font-raleway text-[0.62rem] font-extralight not-italic tracking-[0.12em] text-gold-muted sm:text-[0.68rem]">
+                    <cite className="mt-3 block font-raleway text-sm font-light not-italic tracking-[0.06em] text-gold-muted/90">
                       — {card.author}
                     </cite>
                   </blockquote>
 
-                  <p className="mt-4 text-[0.82rem] leading-relaxed text-zinc-200/90 sm:text-sm">
+                  <p className="mt-5 break-words text-base leading-loose text-zinc-100/90">
                     {card.message}
                   </p>
 
                   {phase === "text" ? (
-                    <button
-                      type="button"
-                      onClick={handleOpenPractice}
-                      className="mt-5 self-start rounded-full border border-gold/35 bg-gold/[0.08] px-4 py-2 font-raleway text-[0.62rem] font-extralight uppercase tracking-[0.22em] text-gold transition-colors hover:bg-gold/[0.14] sm:px-5 sm:py-2.5 sm:text-[0.68rem]"
-                    >
-                      Открыть практику
-                    </button>
+                    <div className="mt-8 flex w-full justify-center">
+                      <button
+                        type="button"
+                        onClick={handleOpenPractice}
+                        className={PRIMARY_CTA_CLASS}
+                      >
+                        Открыть практику
+                      </button>
+                    </div>
                   ) : null}
 
                   {phase === "practice" ? (
-                    <div className="mt-5 space-y-4">
+                    <div className="mt-6 space-y-6">
                       <section>
-                        <h3 className="font-montserrat text-[0.55rem] font-extralight uppercase tracking-[0.35em] text-gold/80">
+                        <h3 className="font-montserrat text-xs font-light uppercase tracking-[0.32em] text-gold/85">
                           🧘 Практика
                         </h3>
-                        <div className="mt-2">
+                        <div className="mt-4">
                           <PracticeList practice={card.practice} />
                         </div>
                       </section>
 
-                      <section className="rounded-xl border border-gold/20 bg-gold/[0.05] px-3 py-3 sm:px-4 sm:py-4">
-                        <h3 className="font-montserrat text-[0.55rem] font-extralight uppercase tracking-[0.35em] text-gold/80">
+                      <section className="rounded-xl border border-gold/25 bg-gold/[0.06] px-5 py-4">
+                        <h3 className="font-montserrat text-xs font-light uppercase tracking-[0.32em] text-gold/85">
                           🎯 Фокус дня
                         </h3>
-                        <p className="mt-2 text-[0.82rem] leading-relaxed text-gold/90 sm:text-sm">
+                        <p className="mt-3 break-words text-base leading-loose text-[#f5e6c8]/90">
                           {card.focus}
                         </p>
                       </section>
 
                       {nextDrawAt ? (
-                        <button
-                          type="button"
-                          onClick={handleComplete}
-                          className="mt-2 w-full rounded-full border border-gold/35 bg-gold/[0.1] px-5 py-3 font-raleway text-[0.62rem] font-extralight uppercase tracking-[0.22em] text-gold transition-colors hover:bg-gold/[0.16]"
-                        >
-                          Завершить и поделиться
-                        </button>
+                        <div className="flex w-full justify-center pt-2">
+                          <button
+                            type="button"
+                            onClick={handleComplete}
+                            className={PRIMARY_CTA_CLASS}
+                          >
+                            Завершить и поделиться
+                          </button>
+                        </div>
                       ) : null}
                     </div>
                   ) : null}
 
-                  <BrandFooter className="mt-auto pt-4" />
+                  <BrandFooter className="mt-auto pt-6" />
                 </div>
               </div>
             ) : null}
           </div>
 
           {phase === "closed" || phase === "art" ? (
-            <p className="card-hint-shimmer mt-4 font-raleway text-[0.62rem] font-extralight uppercase tracking-[0.26em] text-gold-muted">
+            <p className="card-hint-shimmer mt-4 text-center font-raleway text-xs font-extralight uppercase tracking-[0.26em] text-gold-muted">
               {phase === "closed"
                 ? "коснись, чтобы перевернуть"
                 : "коснись, чтобы прочитать"}
