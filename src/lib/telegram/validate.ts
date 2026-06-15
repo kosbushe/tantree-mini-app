@@ -77,7 +77,12 @@ export function validateTelegramInitData(
 }
 
 function getMockUser(): TelegramUser {
-  const mockUserId = Number(process.env.DEV_MOCK_USER_ID ?? "123456789");
+  const mockUserId = Number(
+    process.env.DEV_MOCK_USER_ID ??
+      process.env.NEXT_PUBLIC_MOCK_USER_ID ??
+      process.env.MOCK_USER_ID ??
+      "123456789",
+  );
 
   return {
     id: mockUserId,

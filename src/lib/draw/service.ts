@@ -1,4 +1,5 @@
 import { getCardById, pickRandomCardId } from "@/lib/cards";
+import { getNextDrawAtIso, getTodayDrawDate } from "@/lib/daily-draw";
 import { isDevMockMode } from "@/lib/dev/mock-mode";
 import {
   memoryClearUser,
@@ -6,36 +7,10 @@ import {
   memoryRecordDraw,
   memoryUpsertUser,
 } from "@/lib/draw/memory-store";
-import {
-  DRAW_COOLDOWN_MS,
-  type DrawRecord,
-  type DrawStatus,
-} from "@/lib/draw/types";
+import { type DrawStatus } from "@/lib/draw/types";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type { TelegramUser } from "@/lib/telegram/validate";
 import type { Card } from "@/types/card";
-
-function buildStatus(lastDraw: DrawRecord | null): DrawStatus {
-  if (!lastDraw) {
-    return {
-      canDraw: true,
-      nextDrawAt: null,
-      lastDraw: null,
-      card: null,
-    };
-  }
-
-  const drawnAtMs = new Date(lastDraw.drawnAt).getTime();
-  const nextDrawAtMs = drawnAtMs + DRAW_COOLDOWN_MS;
-  const canDraw = Date.now() >= nextDrawAtMs;
-
-  return {
-    canDraw,
-    nextDrawAt: canDraw ? null : new Date(nextDrawAtMs).toISOString(),
-    lastDraw,
-    card: getCardById(lastDraw.cardId) ?? null,
-  };
-}
 
 async function upsertUser(user: TelegramUser): Promise<void> {
   if (isDevMockMode()) {
@@ -62,58 +37,82 @@ async function upsertUser(user: TelegramUser): Promise<void> {
   }
 }
 
-async function getLatestDraw(userId: number): Promise<DrawRecord | null> {
+async function getTodayDraw(userId: number): Promise<number | null> {
   if (isDevMockMode()) {
-    return memoryGetLatestDraw(userId);
+    const lastDraw = memoryGetLatestDraw(userId);
+    if (!lastDraw) {
+      return null;
+    }
+
+    const drawnDate = new Date(lastDraw.drawnAt).toLocaleDateString("en-CA");
+    return drawnDate === getTodayDrawDate() ? lastDraw.cardId : null;
   }
 
   const supabase = getSupabaseAdmin();
+  const today = getTodayDrawDate();
 
   const { data, error } = await supabase
-    .from("card_draws")
-    .select("card_id, drawn_at")
-    .eq("user_id", userId)
-    .order("drawn_at", { ascending: false })
-    .limit(1)
+    .from("daily_draws")
+    .select("card_id")
+    .eq("telegram_id", userId)
+    .eq("draw_date", today)
     .maybeSingle();
 
   if (error) {
-    throw new Error(`Failed to fetch draw history: ${error.message}`);
+    throw new Error(`Failed to fetch daily draw: ${error.message}`);
   }
 
-  if (!data) {
-    return null;
-  }
-
-  return {
-    cardId: data.card_id,
-    drawnAt: data.drawn_at,
-  };
+  return data?.card_id ?? null;
 }
 
-async function recordDraw(userId: number, record: DrawRecord): Promise<void> {
+async function recordTodayDraw(userId: number, cardId: number): Promise<void> {
+  const today = getTodayDrawDate();
+  const drawnAt = new Date().toISOString();
+
   if (isDevMockMode()) {
-    memoryRecordDraw(userId, record);
+    memoryRecordDraw(userId, { cardId, drawnAt });
     return;
   }
 
   const supabase = getSupabaseAdmin();
 
-  const { error } = await supabase.from("card_draws").insert({
-    user_id: userId,
-    card_id: record.cardId,
-    drawn_at: record.drawnAt,
+  const { error } = await supabase.from("daily_draws").insert({
+    telegram_id: userId,
+    draw_date: today,
+    card_id: cardId,
   });
 
   if (error) {
-    throw new Error(`Failed to record draw: ${error.message}`);
+    throw new Error(`Failed to record daily draw: ${error.message}`);
   }
+}
+
+function buildStatus(cardId: number | null): DrawStatus {
+  if (!cardId) {
+    return {
+      canDraw: true,
+      nextDrawAt: null,
+      lastDraw: null,
+      card: null,
+    };
+  }
+
+  const card = getCardById(cardId) ?? null;
+
+  return {
+    canDraw: false,
+    nextDrawAt: getNextDrawAtIso(),
+    lastDraw: card
+      ? { cardId: card.id, drawnAt: new Date().toISOString() }
+      : null,
+    card,
+  };
 }
 
 export async function getDrawStatus(user: TelegramUser): Promise<DrawStatus> {
   await upsertUser(user);
-  const lastDraw = await getLatestDraw(user.id);
-  return buildStatus(lastDraw);
+  const cardId = await getTodayDraw(user.id);
+  return buildStatus(cardId);
 }
 
 export async function drawCard(user: TelegramUser): Promise<{
@@ -122,10 +121,9 @@ export async function drawCard(user: TelegramUser): Promise<{
 }> {
   await upsertUser(user);
 
-  const lastDraw = await getLatestDraw(user.id);
-  const status = buildStatus(lastDraw);
-
-  if (!status.canDraw) {
+  const existingCardId = await getTodayDraw(user.id);
+  if (existingCardId) {
+    const status = buildStatus(existingCardId);
     throw new DrawCooldownError(status.nextDrawAt!, status);
   }
 
@@ -136,17 +134,12 @@ export async function drawCard(user: TelegramUser): Promise<{
     throw new Error(`Card ${cardId} not found`);
   }
 
-  const drawnAt = new Date().toISOString();
-  await recordDraw(user.id, { cardId, drawnAt });
+  await recordTodayDraw(user.id, cardId);
 
-  const nextStatus: DrawStatus = {
-    canDraw: false,
-    nextDrawAt: new Date(Date.now() + DRAW_COOLDOWN_MS).toISOString(),
-    lastDraw: { cardId, drawnAt },
+  return {
+    status: buildStatus(cardId),
     card,
   };
-
-  return { status: nextStatus, card };
 }
 
 export async function resetDraw(user: TelegramUser): Promise<DrawStatus> {
@@ -156,12 +149,18 @@ export async function resetDraw(user: TelegramUser): Promise<DrawStatus> {
 
   memoryClearUser(user.id);
 
-  return {
-    canDraw: true,
-    nextDrawAt: null,
-    lastDraw: null,
-    card: null,
-  };
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase
+    .from("daily_draws")
+    .delete()
+    .eq("telegram_id", user.id)
+    .eq("draw_date", getTodayDrawDate());
+
+  if (error) {
+    throw new Error(`Failed to reset daily draw: ${error.message}`);
+  }
+
+  return buildStatus(null);
 }
 
 export class DrawCooldownError extends Error {
@@ -169,7 +168,7 @@ export class DrawCooldownError extends Error {
   status: DrawStatus;
 
   constructor(nextDrawAt: string, status: DrawStatus) {
-    super("Card already drawn within the last 24 hours");
+    super("Card already drawn today");
     this.name = "DrawCooldownError";
     this.nextDrawAt = nextDrawAt;
     this.status = status;

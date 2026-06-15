@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { parseTelegramUserId, getClientMockUserId } from "@/lib/telegram/parse-user";
+
 interface TelegramWebApp {
   ready: () => void;
   expand: () => void;
@@ -19,19 +21,35 @@ declare global {
   }
 }
 
+function resolveUserId(initData: string): number | null {
+  const parsedId = parseTelegramUserId(initData);
+  if (parsedId) {
+    return parsedId;
+  }
+
+  if (process.env.NEXT_PUBLIC_ALLOW_MOCK_AUTH === "true") {
+    return getClientMockUserId();
+  }
+
+  return null;
+}
+
 export function useTelegram() {
   const [initData, setInitData] = useState("");
+  const [userId, setUserId] = useState<number | null>(null);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     const webApp = window.Telegram?.WebApp;
+    const nextInitData = webApp?.initData ?? "";
 
     if (webApp) {
       webApp.ready();
       webApp.expand();
-      setInitData(webApp.initData);
     }
 
+    setInitData(nextInitData);
+    setUserId(resolveUserId(nextInitData));
     setIsReady(true);
   }, []);
 
@@ -39,5 +57,5 @@ export function useTelegram() {
     window.Telegram?.WebApp?.HapticFeedback?.impactOccurred(style);
   }, []);
 
-  return { initData, isReady, hapticImpact };
+  return { initData, userId, isReady, hapticImpact };
 }

@@ -7,14 +7,10 @@ import { CardExperience } from "@/components/CardExperience";
 import { Deck } from "@/components/Deck";
 import { DynamicWisdom } from "@/components/DynamicWisdom";
 import { TantreeOfficialLogo } from "@/components/TantreeOfficialLogo";
-import {
-  clearAllMockDrawCache,
-  mergeMockDrawStatus,
-  MOCK_USER_ID,
-  saveMockDrawStatus,
-  type DrawStatusResponse,
-} from "@/lib/draw/mock-cache";
 import { useTelegram } from "@/hooks/useTelegram";
+import { pickRandomCardId } from "@/lib/cards";
+import { getNextDrawAtIso, getTodayDrawDate } from "@/lib/daily-draw";
+import { getSupabaseBrowser } from "@/lib/supabase/client";
 import type { Card } from "@/types/card";
 
 type ScreenMode = "deck" | "card";
@@ -23,11 +19,26 @@ interface GameProps {
   cards: Card[];
 }
 
+function HomeLoader() {
+  return (
+    <div className="m-auto flex flex-col items-center gap-3">
+      <div
+        className="h-8 w-8 animate-spin rounded-full border-2 border-[#c5a059]/25 border-t-[#c5a059]/80"
+        aria-hidden
+      />
+      <p className="font-raleway text-xs font-light uppercase tracking-[0.2em] text-zinc-600">
+        Загрузка...
+      </p>
+    </div>
+  );
+}
+
 export function Game({ cards }: GameProps) {
-  const { initData, isReady, hapticImpact } = useTelegram();
-  const [status, setStatus] = useState<DrawStatusResponse | null>(null);
+  const { initData, userId, isReady, hapticImpact } = useTelegram();
   const [activeCard, setActiveCard] = useState<Card | null>(null);
   const [screenMode, setScreenMode] = useState<ScreenMode>("deck");
+  const [canDrawToday, setCanDrawToday] = useState(false);
+  const [nextDrawAt, setNextDrawAt] = useState<string | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,63 +50,63 @@ export function Game({ cards }: GameProps) {
     [cards],
   );
 
-  const applyStatus = useCallback(
-    (payload: DrawStatusResponse) => {
-      const merged = mergeMockDrawStatus(MOCK_USER_ID, payload);
-      setStatus(merged);
-      setIsMockMode(Boolean(merged.mockMode));
-
-      if (merged.canDraw) {
-        setActiveCard(null);
-        setScreenMode("deck");
-      } else if (!merged.canDraw && merged.lastDraw) {
-        const existingCard =
-          merged.card ?? cardsById(merged.lastDraw.cardId) ?? null;
-        if (existingCard) {
-          setActiveCard(existingCard);
-        }
-      }
-    },
-    [cardsById],
-  );
-
-  const fetchStatus = useCallback(async () => {
-    setError(null);
-
-    const response = await fetch("/api/draw/status", {
-      headers: {
-        "x-telegram-init-data": initData,
-      },
-    });
-
-    const payload = (await response.json()) as DrawStatusResponse & {
-      error?: string;
-    };
-
-    if (!response.ok) {
-      throw new Error(payload.error ?? "Не удалось загрузить статус");
+  const loadTodayDraw = useCallback(async () => {
+    if (!userId) {
+      throw new Error("Не удалось определить Telegram ID пользователя");
     }
 
-    applyStatus(payload);
-  }, [initData, applyStatus]);
+    const supabase = getSupabaseBrowser();
+    const today = getTodayDrawDate();
+
+    const { data, error: fetchError } = await supabase
+      .from("daily_draws")
+      .select("card_id")
+      .eq("telegram_id", userId)
+      .eq("draw_date", today)
+      .maybeSingle();
+
+    if (fetchError) {
+      throw new Error(fetchError.message);
+    }
+
+    if (data) {
+      const existingCard = cardsById(data.card_id);
+      if (!existingCard) {
+        throw new Error(`Карта ${data.card_id} не найдена в колоде`);
+      }
+
+      setActiveCard(existingCard);
+      setCanDrawToday(false);
+      setNextDrawAt(getNextDrawAtIso());
+      return;
+    }
+
+    setActiveCard(null);
+    setCanDrawToday(true);
+    setNextDrawAt(null);
+    setScreenMode("deck");
+  }, [userId, cardsById]);
 
   useEffect(() => {
     if (!isReady) {
       return;
     }
 
+    setIsMockMode(process.env.NEXT_PUBLIC_ALLOW_MOCK_AUTH === "true");
     setIsLoading(true);
-    fetchStatus()
-      .catch((fetchError: Error) => {
-        setError(fetchError.message);
+    setError(null);
+
+    loadTodayDraw()
+      .catch((loadError: Error) => {
+        setError(loadError.message);
       })
       .finally(() => {
         setIsLoading(false);
       });
-  }, [isReady, fetchStatus]);
+  }, [isReady, loadTodayDraw]);
 
   const handleDraw = useCallback(async () => {
-    if (isDrawing || !status?.canDraw) {
+    if (isDrawing || !canDrawToday || !userId) {
       return;
     }
 
@@ -103,33 +114,37 @@ export function Game({ cards }: GameProps) {
     setError(null);
     hapticImpact("medium");
 
+    const cardId = pickRandomCardId();
+    const card = cardsById(cardId);
+
+    if (!card) {
+      setError(`Карта ${cardId} не найдена`);
+      setIsDrawing(false);
+      return;
+    }
+
     try {
-      const response = await fetch("/api/draw", {
-        method: "POST",
-        headers: {
-          "x-telegram-init-data": initData,
-        },
+      const supabase = getSupabaseBrowser();
+      const today = getTodayDrawDate();
+
+      const { error: insertError } = await supabase.from("daily_draws").insert({
+        telegram_id: userId,
+        draw_date: today,
+        card_id: cardId,
       });
 
-      const payload = (await response.json()) as {
-        card?: Card;
-        status?: DrawStatusResponse;
-        error?: string;
-        mockMode?: boolean;
-      };
-
-      if (!response.ok) {
-        if (response.status === 429 && payload.status) {
-          applyStatus(payload.status);
+      if (insertError) {
+        if (insertError.code === "23505") {
+          await loadTodayDraw();
+          return;
         }
-        throw new Error(payload.error ?? "Не удалось вытянуть карту");
+        throw new Error(insertError.message);
       }
 
-      if (payload.card && payload.status) {
-        setActiveCard(payload.card);
-        applyStatus(payload.status);
-        setScreenMode("card");
-      }
+      setActiveCard(card);
+      setCanDrawToday(false);
+      setNextDrawAt(getNextDrawAtIso());
+      setScreenMode("card");
     } catch (drawError) {
       setError(
         drawError instanceof Error ? drawError.message : "Ошибка вытягивания",
@@ -137,10 +152,17 @@ export function Game({ cards }: GameProps) {
     } finally {
       setIsDrawing(false);
     }
-  }, [initData, isDrawing, status?.canDraw, hapticImpact, applyStatus]);
+  }, [
+    isDrawing,
+    canDrawToday,
+    userId,
+    cardsById,
+    hapticImpact,
+    loadTodayDraw,
+  ]);
 
   const handleOpenCard = useCallback(async () => {
-    if (status?.canDraw) {
+    if (canDrawToday) {
       await handleDraw();
       return;
     }
@@ -149,14 +171,14 @@ export function Game({ cards }: GameProps) {
       hapticImpact("light");
       setScreenMode("card");
     }
-  }, [status?.canDraw, activeCard, handleDraw, hapticImpact]);
+  }, [canDrawToday, activeCard, handleDraw, hapticImpact]);
 
   const handleCloseCard = useCallback(() => {
     setScreenMode("deck");
   }, []);
 
   const handleResetCooldown = useCallback(async () => {
-    if (isResetting) {
+    if (isResetting || !userId) {
       return;
     }
 
@@ -165,28 +187,36 @@ export function Game({ cards }: GameProps) {
     hapticImpact("light");
 
     try {
-      clearAllMockDrawCache();
+      if (process.env.NEXT_PUBLIC_ALLOW_MOCK_AUTH === "true") {
+        const supabase = getSupabaseBrowser();
+        const { error: deleteError } = await supabase
+          .from("daily_draws")
+          .delete()
+          .eq("telegram_id", userId)
+          .eq("draw_date", getTodayDrawDate());
 
-      const response = await fetch("/api/draw/reset", {
-        method: "POST",
-        headers: {
-          "x-telegram-init-data": initData,
-        },
-      });
+        if (deleteError) {
+          throw new Error(deleteError.message);
+        }
+      } else {
+        const response = await fetch("/api/draw/reset", {
+          method: "POST",
+          headers: {
+            "x-telegram-init-data": initData,
+          },
+        });
 
-      const payload = (await response.json()) as DrawStatusResponse & {
-        error?: string;
-      };
+        const payload = (await response.json()) as { error?: string };
 
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Не удалось сбросить кулдаун");
+        if (!response.ok) {
+          throw new Error(payload.error ?? "Не удалось сбросить кулдаун");
+        }
       }
 
       setActiveCard(null);
+      setCanDrawToday(true);
+      setNextDrawAt(null);
       setScreenMode("deck");
-      const freshStatus = { ...payload, mockMode: true };
-      setStatus(freshStatus);
-      saveMockDrawStatus(MOCK_USER_ID, freshStatus);
     } catch (resetError) {
       setError(
         resetError instanceof Error
@@ -196,14 +226,14 @@ export function Game({ cards }: GameProps) {
     } finally {
       setIsResetting(false);
     }
-  }, [initData, isResetting, hapticImpact]);
+  }, [initData, isResetting, userId, hapticImpact]);
 
   if (screenMode === "card" && activeCard) {
     return (
       <CardExperience
         key={activeCard.id}
         card={activeCard}
-        nextDrawAt={status?.nextDrawAt}
+        nextDrawAt={nextDrawAt}
         onClose={handleCloseCard}
         onHaptic={hapticImpact}
         onResetCooldown={handleResetCooldown}
@@ -213,7 +243,7 @@ export function Game({ cards }: GameProps) {
     );
   }
 
-  const canOpenCard = Boolean(status?.canDraw || activeCard);
+  const canOpenCard = Boolean(canDrawToday || activeCard);
   const isOpening = isDrawing;
 
   return (
@@ -226,18 +256,17 @@ export function Game({ cards }: GameProps) {
 
       <main className="flex min-h-0 w-full flex-1 flex-col items-center">
         {isLoading ? (
-          <p className="m-auto font-raleway text-xs font-light uppercase tracking-[0.2em] text-zinc-600">
-            Загрузка...
-          </p>
+          <HomeLoader />
         ) : (
           <>
             <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center px-1">
               <div className="flex shrink-0 flex-col items-center">
-                {status?.canDraw ? (
+                {canDrawToday ? (
                   <Deck
                     variant="home"
                     onDraw={handleDraw}
                     isDrawing={isDrawing}
+                    disabled={isDrawing}
                   />
                 ) : (
                   <TantreeOfficialLogo className="w-full max-w-[96vw]" />
@@ -265,7 +294,7 @@ export function Game({ cards }: GameProps) {
                 </button>
               ) : null}
 
-              {status?.canDraw ? (
+              {canDrawToday ? (
                 <p className="mt-1.5 font-raleway text-[0.55rem] font-light uppercase tracking-[0.22em] text-zinc-600">
                   или коснись колоды
                 </p>
