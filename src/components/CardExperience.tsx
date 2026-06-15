@@ -19,9 +19,6 @@ interface CardExperienceProps {
   nextDrawAt?: string | null;
   onClose: () => void;
   onHaptic?: (style?: "light" | "medium" | "heavy") => void;
-  onResetCooldown?: () => void;
-  isResetting?: boolean;
-  showDevReset?: boolean;
 }
 
 const PRIMARY_CTA_CLASS =
@@ -119,9 +116,6 @@ export function CardExperience({
   nextDrawAt,
   onClose,
   onHaptic,
-  onResetCooldown,
-  isResetting,
-  showDevReset,
 }: CardExperienceProps) {
   const isMounted = useIsMounted();
   const [phase, setPhase] = useState<CardPhase>("closed");
@@ -173,9 +167,6 @@ export function CardExperience({
         nextDrawAt={nextDrawAt}
         onGoHome={onClose}
         onHaptic={onHaptic}
-        onResetCooldown={onResetCooldown}
-        isResetting={isResetting}
-        showDevReset={showDevReset}
       />
     );
   }

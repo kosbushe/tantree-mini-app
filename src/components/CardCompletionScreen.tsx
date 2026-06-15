@@ -14,9 +14,6 @@ interface CardCompletionScreenProps {
   nextDrawAt: string;
   onGoHome: () => void;
   onHaptic?: (style?: "light" | "medium" | "heavy") => void;
-  onResetCooldown?: () => void;
-  isResetting?: boolean;
-  showDevReset?: boolean;
 }
 
 export function CardCompletionScreen({
@@ -24,9 +21,6 @@ export function CardCompletionScreen({
   nextDrawAt,
   onGoHome,
   onHaptic,
-  onResetCooldown,
-  isResetting = false,
-  showDevReset = false,
 }: CardCompletionScreenProps) {
   const [shareNote, setShareNote] = useState<string | null>(null);
 
@@ -98,19 +92,6 @@ export function CardCompletionScreen({
         >
           На главную
         </button>
-
-        {showDevReset && onResetCooldown ? (
-          <button
-            type="button"
-            onClick={onResetCooldown}
-            disabled={isResetting}
-            className="font-raleway text-[0.48rem] font-extralight uppercase tracking-[0.1em] text-gold-muted/35 transition-colors hover:text-gold-muted/65 disabled:opacity-40"
-          >
-            {isResetting
-              ? "Сброс..."
-              : "[Тест] Сбросить таймер и очистить память"}
-          </button>
-        ) : null}
       </div>
     </div>
   );

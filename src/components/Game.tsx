@@ -5,8 +5,8 @@ import { useCallback, useEffect, useState } from "react";
 import { AppLoader, AppLoaderScreen } from "@/components/AppLoader";
 import { HomeAuthorCredit } from "@/components/BrandHeader";
 import { CardExperience } from "@/components/CardExperience";
-import { Deck } from "@/components/Deck";
 import { DynamicWisdom } from "@/components/DynamicWisdom";
+import { HomeAnimatedDeck } from "@/components/HomeAnimatedDeck";
 import { TantreeOfficialLogo } from "@/components/TantreeOfficialLogo";
 import { useTelegram } from "@/hooks/useTelegram";
 import { pickRandomCardId } from "@/lib/cards";
@@ -25,7 +25,7 @@ function HomeLoader() {
 }
 
 export function Game({ cards }: GameProps) {
-  const { initData, userId, isMounted, isReady, hapticImpact } = useTelegram();
+  const { userId, isMounted, isReady, hapticImpact } = useTelegram();
   const [activeCard, setActiveCard] = useState<Card | null>(null);
   const [screenMode, setScreenMode] = useState<ScreenMode>("deck");
   const [canDrawToday, setCanDrawToday] = useState(false);
@@ -33,8 +33,6 @@ export function Game({ cards }: GameProps) {
   const [isDrawing, setIsDrawing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isMockMode, setIsMockMode] = useState(false);
-  const [isResetting, setIsResetting] = useState(false);
 
   const cardsById = useCallback(
     (cardId: number) => cards.find((card) => card.id === cardId) ?? null,
@@ -83,7 +81,6 @@ export function Game({ cards }: GameProps) {
       return;
     }
 
-    setIsMockMode(process.env.NEXT_PUBLIC_ALLOW_MOCK_AUTH === "true");
     setIsLoading(true);
     setError(null);
 
@@ -168,57 +165,6 @@ export function Game({ cards }: GameProps) {
     setScreenMode("deck");
   }, []);
 
-  const handleResetCooldown = useCallback(async () => {
-    if (isResetting || !userId) {
-      return;
-    }
-
-    setIsResetting(true);
-    setError(null);
-    hapticImpact("light");
-
-    try {
-      if (process.env.NEXT_PUBLIC_ALLOW_MOCK_AUTH === "true") {
-        const supabase = getSupabaseBrowser();
-        const { error: deleteError } = await supabase
-          .from("daily_draws")
-          .delete()
-          .eq("telegram_id", userId)
-          .eq("draw_date", getTodayDrawDate());
-
-        if (deleteError) {
-          throw new Error(deleteError.message);
-        }
-      } else {
-        const response = await fetch("/api/draw/reset", {
-          method: "POST",
-          headers: {
-            "x-telegram-init-data": initData,
-          },
-        });
-
-        const payload = (await response.json()) as { error?: string };
-
-        if (!response.ok) {
-          throw new Error(payload.error ?? "Не удалось сбросить кулдаун");
-        }
-      }
-
-      setActiveCard(null);
-      setCanDrawToday(true);
-      setNextDrawAt(null);
-      setScreenMode("deck");
-    } catch (resetError) {
-      setError(
-        resetError instanceof Error
-          ? resetError.message
-          : "Ошибка сброса кулдауна",
-      );
-    } finally {
-      setIsResetting(false);
-    }
-  }, [initData, isResetting, userId, hapticImpact]);
-
   if (!isMounted) {
     return <AppLoaderScreen />;
   }
@@ -231,9 +177,6 @@ export function Game({ cards }: GameProps) {
         nextDrawAt={nextDrawAt}
         onClose={handleCloseCard}
         onHaptic={hapticImpact}
-        onResetCooldown={handleResetCooldown}
-        isResetting={isResetting}
-        showDevReset={isMockMode}
       />
     );
   }
@@ -243,12 +186,6 @@ export function Game({ cards }: GameProps) {
 
   return (
     <div className="flex h-dvh max-h-dvh w-full flex-col items-center overflow-hidden bg-[#000000] px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-[max(0.375rem,env(safe-area-inset-top))]">
-      {isMockMode ? (
-        <p className="absolute right-4 top-[max(0.5rem,env(safe-area-inset-top))] z-10 font-raleway text-[0.48rem] font-light uppercase tracking-[0.22em] text-zinc-700">
-          mock
-        </p>
-      ) : null}
-
       <main className="flex min-h-0 w-full flex-1 flex-col items-center">
         {isLoading ? (
           <HomeLoader />
@@ -257,8 +194,7 @@ export function Game({ cards }: GameProps) {
             <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center px-1">
               <div className="flex shrink-0 flex-col items-center">
                 {canDrawToday ? (
-                  <Deck
-                    variant="home"
+                  <HomeAnimatedDeck
                     onDraw={handleDraw}
                     isDrawing={isDrawing}
                     disabled={isDrawing}
