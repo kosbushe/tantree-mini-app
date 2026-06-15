@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { useIsMounted } from "@/hooks/useIsMounted";
+
 interface CooldownTimerProps {
   nextDrawAt: string;
   compact?: boolean;
@@ -26,17 +28,26 @@ export function CooldownTimer({
   nextDrawAt,
   compact = false,
 }: CooldownTimerProps) {
-  const [remaining, setRemaining] = useState(
-    () => new Date(nextDrawAt).getTime() - Date.now(),
-  );
+  const isMounted = useIsMounted();
+  const [remaining, setRemaining] = useState(0);
 
   useEffect(() => {
-    const interval = window.setInterval(() => {
+    if (!isMounted) {
+      return;
+    }
+
+    const updateRemaining = () => {
       setRemaining(new Date(nextDrawAt).getTime() - Date.now());
-    }, 1000);
+    };
+
+    updateRemaining();
+
+    const interval = window.setInterval(updateRemaining, 1000);
 
     return () => window.clearInterval(interval);
-  }, [nextDrawAt]);
+  }, [isMounted, nextDrawAt]);
+
+  const display = isMounted ? formatRemaining(remaining) : "--:--:--";
 
   if (compact) {
     return (
@@ -45,7 +56,7 @@ export function CooldownTimer({
           Следующая карта через
         </p>
         <p className="font-montserrat mt-1 text-[1.75rem] font-extralight tracking-[0.18em] text-gold tabular-nums">
-          {formatRemaining(remaining)}
+          {display}
         </p>
       </div>
     );
@@ -57,7 +68,7 @@ export function CooldownTimer({
         Следующая карта через
       </p>
       <p className="font-montserrat mt-3 text-3xl font-extralight tracking-[0.2em] text-gold tabular-nums">
-        {formatRemaining(remaining)}
+        {display}
       </p>
       <p className="font-raleway mt-3 text-xs font-extralight leading-relaxed tracking-[0.06em] text-zinc-500">
         Одна карта в сутки — тантрический ритм присутствия

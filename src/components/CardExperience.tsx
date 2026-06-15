@@ -4,9 +4,11 @@ import { X } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useState } from "react";
 
+import { AppLoaderScreen } from "@/components/AppLoader";
 import { BrandFooter } from "@/components/BrandFooter";
 import { CardBackFace, CARD_HELD_IMAGE } from "@/components/CardBackFace";
 import { CardCompletionScreen } from "@/components/CardCompletionScreen";
+import { useIsMounted } from "@/hooks/useIsMounted";
 import { getCardArtPath, hasCardArt } from "@/lib/cards";
 import type { Card } from "@/types/card";
 
@@ -121,6 +123,7 @@ export function CardExperience({
   isResetting,
   showDevReset,
 }: CardExperienceProps) {
+  const isMounted = useIsMounted();
   const [phase, setPhase] = useState<CardPhase>("closed");
   const [isFlipping, setIsFlipping] = useState(false);
 
@@ -158,6 +161,10 @@ export function CardExperience({
     onHaptic?.("medium");
     setPhase("complete");
   }, [onHaptic]);
+
+  if (!isMounted) {
+    return <AppLoaderScreen />;
+  }
 
   if (phase === "complete" && nextDrawAt) {
     return (

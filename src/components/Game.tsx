@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { AppLoader, AppLoaderScreen } from "@/components/AppLoader";
 import { HomeAuthorCredit } from "@/components/BrandHeader";
 import { CardExperience } from "@/components/CardExperience";
 import { Deck } from "@/components/Deck";
@@ -20,21 +21,11 @@ interface GameProps {
 }
 
 function HomeLoader() {
-  return (
-    <div className="m-auto flex flex-col items-center gap-3">
-      <div
-        className="h-8 w-8 animate-spin rounded-full border-2 border-[#c5a059]/25 border-t-[#c5a059]/80"
-        aria-hidden
-      />
-      <p className="font-raleway text-xs font-light uppercase tracking-[0.2em] text-zinc-600">
-        Загрузка...
-      </p>
-    </div>
-  );
+  return <AppLoader />;
 }
 
 export function Game({ cards }: GameProps) {
-  const { initData, userId, isReady, hapticImpact } = useTelegram();
+  const { initData, userId, isMounted, isReady, hapticImpact } = useTelegram();
   const [activeCard, setActiveCard] = useState<Card | null>(null);
   const [screenMode, setScreenMode] = useState<ScreenMode>("deck");
   const [canDrawToday, setCanDrawToday] = useState(false);
@@ -227,6 +218,10 @@ export function Game({ cards }: GameProps) {
       setIsResetting(false);
     }
   }, [initData, isResetting, userId, hapticImpact]);
+
+  if (!isMounted) {
+    return <AppLoaderScreen />;
+  }
 
   if (screenMode === "card" && activeCard) {
     return (

@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 
-import { getDailyWisdom } from "@/lib/daily-wisdom";
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { getDailyWisdom, type WisdomQuote } from "@/lib/daily-wisdom";
 import type { Card } from "@/types/card";
 
 interface DynamicWisdomProps {
@@ -11,7 +12,26 @@ interface DynamicWisdomProps {
 }
 
 export function DynamicWisdom({ cards, compact = false }: DynamicWisdomProps) {
-  const wisdom = useMemo(() => getDailyWisdom(cards), [cards]);
+  const isMounted = useIsMounted();
+  const [wisdom, setWisdom] = useState<WisdomQuote | null>(null);
+
+  useEffect(() => {
+    if (!isMounted) {
+      return;
+    }
+
+    setWisdom(getDailyWisdom(cards));
+  }, [cards, isMounted]);
+
+  if (!wisdom) {
+    return (
+      <footer className="w-full text-center">
+        <p className="font-raleway text-xs italic leading-relaxed text-zinc-600/0">
+          &nbsp;
+        </p>
+      </footer>
+    );
+  }
 
   if (compact) {
     return (

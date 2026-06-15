@@ -1,10 +1,32 @@
 import { getCardArtPath } from "@/lib/cards";
 import type { Card } from "@/types/card";
 
+interface TelegramShareWebApp {
+  shareToStory?: (
+    mediaUrl: string,
+    params?: { text?: string; widget_link?: { url: string; name: string } },
+  ) => void;
+  openTelegramLink?: (url: string) => void;
+  isVersionAtLeast?: (version: string) => boolean;
+}
+
 function getCardArtAbsoluteUrl(cardId: number): string {
   const origin =
     typeof window !== "undefined" ? window.location.origin : "";
   return `${origin}${getCardArtPath(cardId)}`;
+}
+
+function getBotShareUrl(): string {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  return process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL ?? window.location.href;
+}
+
+function buildTelegramShareLink(text: string): string {
+  const botUrl = getBotShareUrl();
+  return `https://t.me/share/url?url=${encodeURIComponent(botUrl)}&text=${encodeURIComponent(text)}`;
 }
 
 export function buildCardShareText(card: Card): string {
@@ -21,27 +43,24 @@ export function buildCardShareText(card: Card): string {
 }
 
 export async function shareCardToTelegram(card: Card): Promise<boolean> {
-  const webApp = window.Telegram?.WebApp as
-    | {
-        shareToStory?: (
-          mediaUrl: string,
-          params?: { text?: string; widget_link?: { url: string; name: string } },
-        ) => void;
-        openTelegramLink?: (url: string) => void;
-      }
-    | undefined;
+  const webApp = window.Telegram?.WebApp as TelegramShareWebApp | undefined;
 
   const text = buildCardShareText(card);
   const mediaUrl = getCardArtAbsoluteUrl(card.id);
 
-  if (webApp?.shareToStory) {
-    webApp.shareToStory(mediaUrl, {
+  if (webApp && webApp.isVersionAtLeast && webApp.isVersionAtLeast("7.8")) {
+    webApp.shareToStory?.(mediaUrl, {
       text: `TANTREE · ${card.title}`,
       widget_link: {
         url: window.location.href,
         name: "TANTREE",
       },
     });
+    return true;
+  }
+
+  if (webApp?.openTelegramLink) {
+    webApp.openTelegramLink(buildTelegramShareLink(text));
     return true;
   }
 

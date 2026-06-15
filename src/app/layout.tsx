@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import Script from "next/script";
 import { Montserrat, Raleway } from "next/font/google";
+
+import { TelegramWebAppScript } from "@/components/TelegramWebAppScript";
 
 import "./globals.css";
 
@@ -37,13 +38,14 @@ export default function RootLayout({
   return (
     <html
       lang="ru"
+      suppressHydrationWarning
       className={`${montserrat.variable} ${raleway.variable} h-full bg-black antialiased`}
     >
-      <body className="flex h-dvh max-h-dvh flex-col overflow-hidden bg-[#000000] text-zinc-100">
-        <Script
-          src="https://telegram.org/js/telegram-web-app.js"
-          strategy="beforeInteractive"
-        />
+      <body
+        suppressHydrationWarning
+        className="flex h-dvh max-h-dvh flex-col overflow-hidden bg-[#000000] text-zinc-100"
+      >
+        <TelegramWebAppScript />
         {children}
       </body>
     </html>
