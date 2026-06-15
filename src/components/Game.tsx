@@ -7,7 +7,6 @@ import { HomeAuthorCredit } from "@/components/BrandHeader";
 import { CardExperience } from "@/components/CardExperience";
 import { DynamicWisdom } from "@/components/DynamicWisdom";
 import { HomeAnimatedDeck } from "@/components/HomeAnimatedDeck";
-import { TantreeOfficialLogo } from "@/components/TantreeOfficialLogo";
 import { useTelegram } from "@/hooks/useTelegram";
 import { pickRandomCardId } from "@/lib/cards";
 import { getNextDrawAtIso, getTodayDrawDate } from "@/lib/daily-draw";
@@ -161,6 +160,18 @@ export function Game({ cards }: GameProps) {
     }
   }, [canDrawToday, activeCard, handleDraw, hapticImpact]);
 
+  const handleDeckClick = useCallback(async () => {
+    if (canDrawToday) {
+      await handleDraw();
+      return;
+    }
+
+    if (activeCard) {
+      hapticImpact("light");
+      setScreenMode("card");
+    }
+  }, [canDrawToday, activeCard, handleDraw, hapticImpact]);
+
   const handleCloseCard = useCallback(() => {
     setScreenMode("deck");
   }, []);
@@ -193,15 +204,13 @@ export function Game({ cards }: GameProps) {
           <>
             <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center px-1">
               <div className="flex shrink-0 flex-col items-center">
-                {canDrawToday ? (
-                  <HomeAnimatedDeck
-                    onDraw={handleDraw}
-                    isDrawing={isDrawing}
-                    disabled={isDrawing}
-                  />
-                ) : (
-                  <TantreeOfficialLogo className="w-full max-w-[96vw]" />
-                )}
+                <HomeAnimatedDeck
+                  onDraw={() => {
+                    void handleDeckClick();
+                  }}
+                  isDrawing={isDrawing}
+                  disabled={isDrawing || (!canDrawToday && !activeCard)}
+                />
 
                 <HomeAuthorCredit className="mt-4" />
               </div>
@@ -225,7 +234,7 @@ export function Game({ cards }: GameProps) {
                 </button>
               ) : null}
 
-              {canDrawToday ? (
+              {canOpenCard ? (
                 <p className="mt-1.5 font-raleway text-[0.55rem] font-light uppercase tracking-[0.22em] text-zinc-600">
                   или коснись колоды
                 </p>

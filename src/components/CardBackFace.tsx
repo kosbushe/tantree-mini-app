@@ -5,23 +5,33 @@ import { useState } from "react";
 
 export const CARD_BACK_IMAGE = "/images/card_back.png";
 export const CARD_HELD_IMAGE = "/images/new_tantree_card.png";
+export const CARD_EXPERIENCE_BACK_IMAGE = "/images/card_back_hero.png";
 
 interface CardBackFaceProps {
   compact?: boolean;
   priority?: boolean;
   imageSrc?: string;
+  fit?: "cover" | "contain";
+  contentClassName?: string;
+  mediaClassName?: string;
 }
 
 export function CardBackFace({
   compact = false,
   priority = false,
   imageSrc = CARD_BACK_IMAGE,
+  fit = "cover",
+  contentClassName,
+  mediaClassName,
 }: CardBackFaceProps) {
   const [hasError, setHasError] = useState(false);
 
   return (
     <div
-      className={`card-back-face ${compact ? "card-back-face--compact" : ""}`}
+      className={
+        contentClassName ??
+        `card-back-face ${compact ? "card-back-face--compact" : ""}`
+      }
     >
       {!hasError ? (
         <Image
@@ -29,12 +39,13 @@ export function CardBackFace({
           alt="Рубашка карты TANTREE"
           fill
           priority={priority}
-          className="card-back-face__image rounded-[1.35rem] object-cover object-center"
-          sizes={
-            compact
-              ? "(max-width: 768px) 93vw, 380px"
-              : "(max-width: 768px) 93vw, 380px"
+          className={
+            mediaClassName ??
+            (fit === "contain"
+              ? "card-back-face__image rounded-[1.35rem] object-contain object-center"
+              : "card-back-face__image rounded-[1.35rem] object-cover object-center")
           }
+          sizes="100vw"
           onError={() => setHasError(true)}
         />
       ) : (

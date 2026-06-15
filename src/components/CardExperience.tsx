@@ -1,12 +1,11 @@
 "use client";
 
 import { X } from "lucide-react";
-import Image from "next/image";
 import { useCallback, useState } from "react";
 
 import { AppLoaderScreen } from "@/components/AppLoader";
 import { BrandFooter } from "@/components/BrandFooter";
-import { CardBackFace, CARD_HELD_IMAGE } from "@/components/CardBackFace";
+import { CARD_EXPERIENCE_BACK_IMAGE } from "@/components/CardBackFace";
 import { CardCompletionScreen } from "@/components/CardCompletionScreen";
 import { useIsMounted } from "@/hooks/useIsMounted";
 import { getCardArtPath, hasCardArt } from "@/lib/cards";
@@ -24,6 +23,31 @@ interface CardExperienceProps {
 
 const PRIMARY_CTA_CLASS =
   "mx-auto flex w-full max-w-[280px] items-center justify-center rounded-full border border-[#c5a059]/55 bg-[#c5a059]/12 px-6 py-3 text-center font-raleway text-xs font-normal uppercase tracking-[0.18em] text-[#f5e6c8] shadow-[0_4px_24px_rgba(197,160,89,0.18),inset_0_1px_0_rgba(255,255,255,0.06)] transition-all hover:border-[#c5a059]/80 hover:bg-[#c5a059]/20 active:scale-[0.98]";
+
+const CARD_FLIP_BOX_CLASS =
+  "card-experience-flip card-flip-scene relative aspect-[686/1024] w-[min(100vw,calc(100dvh*686/1024))] max-h-[100dvh] shrink-0 overflow-hidden rounded-[1.35rem]";
+
+function CardFaceImage({
+  src,
+  alt,
+  onError,
+}: {
+  src: string;
+  alt: string;
+  onError?: () => void;
+}) {
+  return (
+    // Native img: Next/Image fill keeps aspect ratio and blocks object-fill stretch.
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={alt}
+      className="card-face-stretch"
+      draggable={false}
+      onError={onError}
+    />
+  );
+}
 
 function TypographedText({
   text,
@@ -96,7 +120,7 @@ function CardArtPlaceholder({
   title: string;
 }) {
   return (
-    <div className="card-art-face card-art-face--placeholder flex h-full w-full flex-col items-center justify-center px-6 text-center">
+    <div className="card-art-face card-art-face--placeholder absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
       <p className="font-montserrat text-xs font-extralight uppercase tracking-[0.35em] text-gold-muted/70">
         Карта {cardId}
       </p>
@@ -118,18 +142,11 @@ function CardArt({ cardId, title }: { cardId: number; title: string }) {
   }
 
   return (
-    <div className="card-art-face">
-      <Image
-        src={artPath}
-        alt={`Арт карты «${title}»`}
-        fill
-        priority
-        unoptimized
-        className="card-art-face__image rounded-[1.35rem] object-cover object-center"
-        sizes="(max-width: 768px) 93vw, 380px"
-        onError={() => setHasError(true)}
-      />
-    </div>
+    <CardFaceImage
+      src={artPath}
+      alt={`Арт карты «${title}»`}
+      onError={() => setHasError(true)}
+    />
   );
 }
 
@@ -204,47 +221,49 @@ export function CardExperience({
         <X className="h-[1.125rem] w-[1.125rem] text-gold-muted/80" strokeWidth={1.25} />
       </button>
 
-      <main className="relative z-10 flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(3.5rem,env(safe-area-inset-top))]">
-        <div className="flex flex-col items-center">
-          <div
-            className={`card-flip-scene card-tarot-shell transition-all duration-500 ease-out ${
-              phase === "closed" || phase === "art" ? "cursor-pointer" : ""
-            }`}
-            onClick={
-              phase === "text" || phase === "practice" ? undefined : handleCardClick
+      <main className="card-experience-stage z-10">
+        <div
+          className={`${CARD_FLIP_BOX_CLASS} transition-all duration-500 ease-out ${
+            phase === "closed" || phase === "art" ? "cursor-pointer" : ""
+          }`}
+          onClick={
+            phase === "text" || phase === "practice" ? undefined : handleCardClick
+          }
+          onKeyDown={(event) => {
+            if (phase === "text" || phase === "practice") return;
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              handleCardClick();
             }
-            onKeyDown={(event) => {
-              if (phase === "text" || phase === "practice") return;
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                handleCardClick();
-              }
-            }}
-            role={phase === "closed" || phase === "art" ? "button" : undefined}
-            tabIndex={phase === "closed" || phase === "art" ? 0 : undefined}
-            aria-label={
-              phase === "closed"
-                ? "Перевернуть карту"
-                : phase === "art"
-                  ? "Открыть послание карты"
-                  : undefined
-            }
-          >
-            <div className={`card-flip-inner ${isFlipped ? "is-flipped" : ""}`}>
-              <div className="card-face card-face--back card-back-surface card-back-surface--glowing">
-                <CardBackFace priority imageSrc={CARD_HELD_IMAGE} />
-              </div>
-
-              <div className="card-face card-face--front card-front-surface relative overflow-hidden rounded-[1.35rem]">
-                <CardArt cardId={card.id} title={card.title} />
-              </div>
+          }}
+          role={phase === "closed" || phase === "art" ? "button" : undefined}
+          tabIndex={phase === "closed" || phase === "art" ? 0 : undefined}
+          aria-label={
+            phase === "closed"
+              ? "Перевернуть карту"
+              : phase === "art"
+                ? "Открыть послание карты"
+                : undefined
+          }
+        >
+          <div className={`card-flip-inner h-full w-full ${isFlipped ? "is-flipped" : ""}`}>
+            <div className="card-face card-face--back">
+              <CardFaceImage
+                src={CARD_EXPERIENCE_BACK_IMAGE}
+                alt="Рубашка карты TANTREE"
+              />
             </div>
 
-            {showTextOverlay ? (
-              <div
-                className="card-text-overlay absolute inset-0 flex flex-col overflow-hidden rounded-[1.35rem] border border-gold/38"
-                onClick={(event) => event.stopPropagation()}
-              >
+            <div className="card-face card-face--front">
+              <CardArt cardId={card.id} title={card.title} />
+            </div>
+          </div>
+
+          {showTextOverlay ? (
+            <div
+              className="card-text-overlay absolute inset-0 flex flex-col overflow-hidden rounded-[1.35rem] border border-gold/38"
+              onClick={(event) => event.stopPropagation()}
+            >
                 <div className="absolute inset-0 bg-black/88 backdrop-blur-md" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/82 to-black/55" />
 
@@ -329,9 +348,11 @@ export function CardExperience({
                 </div>
               </div>
             ) : null}
-          </div>
+        </div>
 
-          {phase === "closed" || phase === "art" ? (
+        {phase === "closed" || phase === "art" ? (
+          <>
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/85 to-transparent" />
             <TypographedText
               as="p"
               text={
@@ -339,10 +360,10 @@ export function CardExperience({
                   ? "коснись, чтобы перевернуть"
                   : "коснись, чтобы прочитать"
               }
-              className="card-hint-shimmer mt-4 text-center font-raleway text-xs font-extralight uppercase tracking-[0.26em] text-balance text-pretty text-gold-muted"
+              className="card-hint-shimmer pointer-events-none absolute inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-20 px-6 text-center font-raleway text-xs font-extralight uppercase tracking-[0.26em] text-balance text-pretty text-gold-muted"
             />
-          ) : null}
-        </div>
+          </>
+        ) : null}
       </main>
     </div>
   );

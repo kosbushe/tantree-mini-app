@@ -235,6 +235,49 @@ body {
   animation: card-experience-enter 0.45s ease-out both;
 }
 
+.card-experience-stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.card-experience-flip {
+  width: min(100vw, calc(100dvh * 686 / 1024));
+  aspect-ratio: 686 / 1024;
+  max-height: 100dvh;
+}
+
+.card-flip-scene .card-face-stretch {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: fill !important;
+  object-position: center;
+  pointer-events: none;
+  user-select: none;
+  border-radius: inherit;
+}
+
+.card-flip-scene .card-back-surface,
+.card-flip-scene .card-front-surface,
+.card-flip-scene .card-face--back,
+.card-flip-scene .card-face--front {
+  filter: none !important;
+  box-shadow: none !important;
+}
+
+.card-experience-stage__card .card-art-face {
+  border: none;
+  box-shadow: none;
+}
+
 .card-tarot-shell {
   aspect-ratio: 2 / 3;
   width: min(93vw, calc(75vh * 2 / 3));
@@ -254,6 +297,10 @@ body {
   perspective: 1200px;
 }
 
+.card-flip-scene:has(.card-flip-inner.h-full) {
+  min-height: 0;
+}
+
 .card-flip-inner {
   position: relative;
   width: 100%;
@@ -269,6 +316,9 @@ body {
 .card-face {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   border-radius: 1.35rem;
