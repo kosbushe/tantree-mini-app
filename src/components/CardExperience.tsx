@@ -10,6 +10,7 @@ import { CardBackFace, CARD_HELD_IMAGE } from "@/components/CardBackFace";
 import { CardCompletionScreen } from "@/components/CardCompletionScreen";
 import { useIsMounted } from "@/hooks/useIsMounted";
 import { getCardArtPath, hasCardArt } from "@/lib/cards";
+import { typographRussian } from "@/lib/typography";
 import type { Card } from "@/types/card";
 
 type CardPhase = "closed" | "art" | "text" | "practice" | "complete";
@@ -23,6 +24,18 @@ interface CardExperienceProps {
 
 const PRIMARY_CTA_CLASS =
   "mx-auto flex w-full max-w-[280px] items-center justify-center rounded-full border border-[#c5a059]/55 bg-[#c5a059]/12 px-6 py-3 text-center font-raleway text-xs font-normal uppercase tracking-[0.18em] text-[#f5e6c8] shadow-[0_4px_24px_rgba(197,160,89,0.18),inset_0_1px_0_rgba(255,255,255,0.06)] transition-all hover:border-[#c5a059]/80 hover:bg-[#c5a059]/20 active:scale-[0.98]";
+
+function TypographedText({
+  text,
+  className,
+  as: Component = "span",
+}: {
+  text: string;
+  className?: string;
+  as?: "p" | "span" | "h2" | "h3" | "cite";
+}) {
+  return <Component className={className}>{typographRussian(text)}</Component>;
+}
 
 function PracticeList({ practice }: { practice: string }) {
   const lines = practice
@@ -42,11 +55,14 @@ function PracticeList({ practice }: { practice: string }) {
   }
 
   return (
-    <div className="break-words text-left text-base leading-loose text-zinc-100/95">
+    <div className="whitespace-pre-line text-pretty break-words text-left text-base leading-relaxed text-zinc-100/95">
       {intro.map((paragraph, index) => (
-        <p key={`intro-${index}`} className="mb-4 last:mb-0">
-          {paragraph}
-        </p>
+        <TypographedText
+          key={`intro-${index}`}
+          as="p"
+          text={paragraph}
+          className="mb-4 text-balance last:mb-0"
+        />
       ))}
 
       {bullets.length > 0 ? (
@@ -59,7 +75,11 @@ function PracticeList({ practice }: { practice: string }) {
               >
                 •
               </span>
-              <span className="flex-1">{item}</span>
+              <TypographedText
+                as="span"
+                text={item}
+                className="flex-1 text-pretty text-balance leading-relaxed"
+              />
             </li>
           ))}
         </ul>
@@ -80,9 +100,11 @@ function CardArtPlaceholder({
       <p className="font-montserrat text-xs font-extralight uppercase tracking-[0.35em] text-gold-muted/70">
         Карта {cardId}
       </p>
-      <p className="font-montserrat mt-3 text-2xl font-extralight tracking-[0.1em] text-gold">
-        {title}
-      </p>
+      <TypographedText
+        as="p"
+        text={title}
+        className="font-montserrat mt-3 text-2xl font-extralight tracking-[0.1em] text-balance text-gold"
+      />
     </div>
   );
 }
@@ -230,22 +252,30 @@ export function CardExperience({
                   <p className="font-montserrat text-xs font-extralight uppercase tracking-[0.35em] text-gold-muted/80">
                     Карта {card.id}
                   </p>
-                  <h2 className="font-montserrat mt-2 text-2xl font-light tracking-[0.08em] text-gold sm:text-3xl">
-                    {card.title}
-                  </h2>
+                  <TypographedText
+                    as="h2"
+                    text={card.title}
+                    className="font-montserrat mt-2 text-2xl font-light tracking-[0.08em] text-balance text-pretty text-gold sm:text-3xl"
+                  />
 
                   <blockquote className="mt-5 border-l-2 border-gold/35 pl-4">
-                    <p className="break-words text-base italic leading-relaxed text-zinc-100/95">
-                      «{card.quote}»
-                    </p>
-                    <cite className="mt-3 block font-raleway text-sm font-light not-italic tracking-[0.06em] text-gold-muted/90">
-                      — {card.author}
-                    </cite>
+                    <TypographedText
+                      as="p"
+                      text={`«${card.quote}»`}
+                      className="text-pretty break-words text-base italic leading-relaxed text-balance text-zinc-100/95"
+                    />
+                    <TypographedText
+                      as="cite"
+                      text={`— ${card.author}`}
+                      className="mt-3 block font-raleway text-sm font-light not-italic tracking-[0.06em] text-pretty text-gold-muted/90"
+                    />
                   </blockquote>
 
-                  <p className="mt-5 break-words text-base leading-loose text-zinc-100/90">
-                    {card.message}
-                  </p>
+                  <TypographedText
+                    as="p"
+                    text={card.message}
+                    className="mt-5 whitespace-pre-line text-pretty break-words text-base leading-relaxed text-zinc-100/90"
+                  />
 
                   {phase === "text" ? (
                     <div className="mt-8 flex w-full justify-center">
@@ -274,9 +304,11 @@ export function CardExperience({
                         <h3 className="font-montserrat text-xs font-light uppercase tracking-[0.32em] text-gold/85">
                           🎯 Фокус дня
                         </h3>
-                        <p className="mt-3 break-words text-base leading-loose text-[#f5e6c8]/90">
-                          {card.focus}
-                        </p>
+                        <TypographedText
+                          as="p"
+                          text={card.focus}
+                          className="mt-3 whitespace-pre-line text-pretty break-words text-base leading-relaxed text-[#f5e6c8]/90"
+                        />
                       </section>
 
                       {nextDrawAt ? (
@@ -300,11 +332,15 @@ export function CardExperience({
           </div>
 
           {phase === "closed" || phase === "art" ? (
-            <p className="card-hint-shimmer mt-4 text-center font-raleway text-xs font-extralight uppercase tracking-[0.26em] text-gold-muted">
-              {phase === "closed"
-                ? "коснись, чтобы перевернуть"
-                : "коснись, чтобы прочитать"}
-            </p>
+            <TypographedText
+              as="p"
+              text={
+                phase === "closed"
+                  ? "коснись, чтобы перевернуть"
+                  : "коснись, чтобы прочитать"
+              }
+              className="card-hint-shimmer mt-4 text-center font-raleway text-xs font-extralight uppercase tracking-[0.26em] text-balance text-pretty text-gold-muted"
+            />
           ) : null}
         </div>
       </main>
