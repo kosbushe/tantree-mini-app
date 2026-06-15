@@ -4,15 +4,18 @@ import Image from "next/image";
 import { useState } from "react";
 
 export const CARD_BACK_IMAGE = "/images/card_back.png";
+export const CARD_HELD_IMAGE = "/images/new_tantree_card.png";
 
 interface CardBackFaceProps {
   compact?: boolean;
   priority?: boolean;
+  imageSrc?: string;
 }
 
 export function CardBackFace({
   compact = false,
   priority = false,
+  imageSrc = CARD_BACK_IMAGE,
 }: CardBackFaceProps) {
   const [hasError, setHasError] = useState(false);
 
@@ -22,7 +25,7 @@ export function CardBackFace({
     >
       {!hasError ? (
         <Image
-          src={CARD_BACK_IMAGE}
+          src={imageSrc}
           alt="Рубашка карты TANTREE"
           fill
           priority={priority}

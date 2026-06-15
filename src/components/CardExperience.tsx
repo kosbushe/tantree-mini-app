@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useCallback, useState } from "react";
 
 import { BrandFooter } from "@/components/BrandFooter";
-import { CardBackFace } from "@/components/CardBackFace";
+import { CardBackFace, CARD_HELD_IMAGE } from "@/components/CardBackFace";
 import { CardCompletionScreen } from "@/components/CardCompletionScreen";
 import { getCardArtPath, hasCardArt } from "@/lib/cards";
 import type { Card } from "@/types/card";
@@ -212,7 +212,7 @@ export function CardExperience({
           >
             <div className={`card-flip-inner ${isFlipped ? "is-flipped" : ""}`}>
               <div className="card-face card-face--back card-back-surface card-back-surface--glowing">
-                <CardBackFace priority />
+                <CardBackFace priority imageSrc={CARD_HELD_IMAGE} />
               </div>
 
               <div className="card-face card-face--front card-front-surface relative overflow-hidden rounded-[1.35rem]">

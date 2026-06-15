@@ -1,6 +1,8 @@
 import Image from "next/image";
 
-export const TANTREE_HEADER_IMAGE = "/images/new_tantree_card.png?v=1";
+import { CARD_HELD_IMAGE } from "@/components/CardBackFace";
+
+export const TANTREE_HEADER_IMAGE = CARD_HELD_IMAGE;
 
 interface TantreeOfficialLogoProps {
   className?: string;
