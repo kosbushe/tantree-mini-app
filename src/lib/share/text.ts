@@ -2,50 +2,69 @@ import type { Card } from "@/types/card";
 
 import { getAppShareUrl, getCardShareUrl } from "@/lib/share/urls";
 
-export function buildCardShareText(card: Card): string {
-  const cardUrl = getCardShareUrl(card.id);
-
-  return [
-    `TANTREE · ${card.title}`,
-    "",
-    `«${card.quote}»`,
-    `— ${card.author}`,
-    "",
-    `🎯 ${card.focus}`,
-    "",
-    "Посмотреть карту:",
-    cardUrl,
-    "",
-    "by Ksenia Bushe",
-  ].join("\n");
+export function buildShareTitle(card: Card): string {
+  return `Карта Tantree: ${card.title}`;
 }
 
-export function buildAppInviteText(): string {
-  const appUrl = getAppShareUrl("share_app_invite");
+/** Full share body: card meaning + card URL + app URL (for clipboard fallback). */
+export function buildUniversalShareText(card: Card): string {
+  const appUrl = getAppShareUrl();
+  const cardUrl = getCardShareUrl(card.id);
 
-  return [
-    "🪐 TANTREE — тантрические метафорические карты",
+  const lines = [
+    `Мне выпала карта «${card.title}».`,
     "",
-    "Вытяни свою честную карту дня и пройди свой путь сонастройки с собой.",
+    `«${card.quote}»`,
     "",
-    "Открыть приложение:",
-    appUrl,
+    "Это карта из Tantree — метафорические карты и практики присутствия.",
+  ];
+
+  if (cardUrl) {
+    lines.push("", "Посмотреть карту:", cardUrl);
+  }
+
+  if (appUrl) {
+    lines.push("", "Открыть приложение:", appUrl);
+  }
+
+  return lines.join("\n");
+}
+
+/** Shorter text for Web Share API (card URL passed separately via `url`). */
+export function buildWebShareText(card: Card): string {
+  const appUrl = getAppShareUrl();
+
+  const lines = [
+    `Мне выпала карта «${card.title}».`,
     "",
-    "by Ksenia Bushe",
-  ].join("\n");
+    `«${card.quote}»`,
+    "",
+    "Это карта из Tantree — метафорические карты и практики присутствия.",
+  ];
+
+  if (appUrl) {
+    lines.push("", "Открыть приложение:", appUrl);
+  }
+
+  return lines.join("\n");
 }
 
 export function buildReelsCaption(card: Card): string {
-  const appUrl = getAppShareUrl("share_reels");
+  const appUrl = getAppShareUrl();
 
-  return [
+  const lines = [
     `TANTREE · ${card.title}`,
     "",
     `«${card.quote}»`,
     "",
     "Вытяни свою карту дня и пройди свой путь 👇",
-    appUrl,
-    "",
-    "#tantree #картынатен #осознанность",
-  ].join("\n");
+  ];
+
+  if (appUrl) {
+    lines.push(appUrl);
+  }
+
+  lines.push("", "#tantree #картынатен #осознанность");
+
+  return lines.join("\n");
 }

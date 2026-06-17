@@ -1,38 +1,45 @@
 function trimTrailingSlash(value: string): string {
-  return value.replace(/\/$/, "");
+  return value.replace(/\/+$/, "");
 }
 
-export function getAppOrigin(): string {
-  if (typeof window !== "undefined") {
-    return window.location.origin;
+function joinUrl(base: string, path: string): string {
+  const normalizedBase = trimTrailingSlash(base);
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${normalizedBase}${normalizedPath}`;
+}
+
+/** App invite link inside share text: bot link preferred, then site URL. */
+export function getAppShareUrl(): string {
+  const botUrl = process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL;
+  if (botUrl) {
+    return trimTrailingSlash(botUrl);
   }
 
-  const configured =
-    process.env.NEXT_PUBLIC_APP_URL ?? process.env.TELEGRAM_WEBAPP_URL;
-
-  return configured ? trimTrailingSlash(configured) : "";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  return appUrl ? trimTrailingSlash(appUrl) : "";
 }
 
-/** Primary link for inviting friends into the mini app (bot link preferred). */
-export function getAppShareUrl(source = "share_app"): string {
-  const botUrl = process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL;
-  const base = botUrl ? trimTrailingSlash(botUrl) : getAppOrigin();
+/** Public site origin for card pages and assets. */
+export function getSiteBaseUrl(): string {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  return appUrl ? trimTrailingSlash(appUrl) : "";
+}
 
+/** Direct link to a card preview page. */
+export function getCardShareUrl(cardId: number): string {
+  const base = getSiteBaseUrl();
   if (!base) {
     return "";
   }
 
-  const separator = base.includes("?") ? "&" : "?";
-  return `${base}${separator}utm_source=${encodeURIComponent(source)}`;
+  return joinUrl(base, `/card/${cardId}`);
 }
 
-/** Public page where a friend can read this card without drawing it. */
-export function getCardShareUrl(cardId: number): string {
-  const origin = getAppOrigin();
-  return `${origin}/card/${cardId}?utm_source=share_card`;
-}
+export function getCardArtAbsoluteUrl(artPath: string): string {
+  const base = getSiteBaseUrl();
+  if (!base) {
+    return artPath;
+  }
 
-export function getCardArtAbsoluteUrl(cardId: number, artPath: string): string {
-  const origin = getAppOrigin();
-  return `${origin}${artPath}`;
+  return joinUrl(base, artPath);
 }

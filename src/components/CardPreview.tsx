@@ -10,7 +10,7 @@ interface CardPreviewProps {
 }
 
 export function CardPreview({ card }: CardPreviewProps) {
-  const appUrl = getAppShareUrl("card_preview");
+  const appUrl = getAppShareUrl();
 
   return (
     <div className="flex min-h-dvh flex-col items-center bg-black px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))]">

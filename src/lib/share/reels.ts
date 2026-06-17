@@ -5,7 +5,7 @@ import type { Card } from "@/types/card";
 
 export async function downloadCardArt(cardId: number): Promise<boolean> {
   const artPath = getCardArtPath(cardId);
-  const url = getCardArtAbsoluteUrl(cardId, artPath);
+  const url = getCardArtAbsoluteUrl(artPath);
 
   try {
     const response = await fetch(url);

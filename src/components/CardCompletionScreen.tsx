@@ -1,15 +1,14 @@
 "use client";
 
-import { Film, Send, Sparkles } from "lucide-react";
+import { Film, Share2 } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useState } from "react";
 
 import { CooldownTimer } from "@/components/CooldownTimer";
 import { getCardArtPath, hasCardArt } from "@/lib/cards";
 import {
-  shareAppWithFriend,
+  shareCard,
   shareCardForSocial,
-  shareCardWithFriend,
   type ShareResult,
 } from "@/lib/telegram/share-card";
 import type { Card } from "@/types/card";
@@ -24,7 +23,7 @@ interface CardCompletionScreenProps {
 const SHARE_BUTTON_CLASS =
   "flex w-full items-center justify-center gap-2 rounded-full border border-gold/35 bg-gold/[0.08] px-6 py-3.5 font-raleway text-[0.62rem] font-extralight uppercase tracking-[0.18em] text-gold transition-colors hover:bg-gold/[0.14] disabled:cursor-wait disabled:opacity-60";
 
-type ShareAction = "card" | "app" | "social" | null;
+type ShareAction = "share" | "social" | null;
 
 export function CardCompletionScreen({
   card,
@@ -33,17 +32,24 @@ export function CardCompletionScreen({
   onHaptic,
 }: CardCompletionScreenProps) {
   const [shareNote, setShareNote] = useState<string | null>(null);
+  const [fallbackText, setFallbackText] = useState<string | null>(null);
   const [activeAction, setActiveAction] = useState<ShareAction>(null);
 
   const runShare = useCallback(
     async (action: ShareAction, handler: () => Promise<ShareResult>) => {
       onHaptic?.("light");
       setShareNote(null);
+      setFallbackText(null);
       setActiveAction(action);
 
       try {
         const result = await handler();
-        setShareNote(result.message);
+        if (result.message) {
+          setShareNote(result.message);
+        }
+        if (result.fallbackText) {
+          setFallbackText(result.fallbackText);
+        }
       } finally {
         setActiveAction(null);
       }
@@ -84,24 +90,12 @@ export function CardCompletionScreen({
           type="button"
           disabled={activeAction !== null}
           onClick={() => {
-            void runShare("card", () => shareCardWithFriend(card));
+            void runShare("share", () => shareCard(card));
           }}
           className={SHARE_BUTTON_CLASS}
         >
-          <Send className="h-4 w-4 shrink-0" strokeWidth={1.25} />
-          {activeAction === "card" ? "Открываем..." : "Отправить карту другу"}
-        </button>
-
-        <button
-          type="button"
-          disabled={activeAction !== null}
-          onClick={() => {
-            void runShare("app", () => shareAppWithFriend());
-          }}
-          className={SHARE_BUTTON_CLASS}
-        >
-          <Sparkles className="h-4 w-4 shrink-0" strokeWidth={1.25} />
-          {activeAction === "app" ? "Открываем..." : "Отправить приложение другу"}
+          <Share2 className="h-4 w-4 shrink-0" strokeWidth={1.25} />
+          {activeAction === "share" ? "Открываем..." : "Поделиться"}
         </button>
 
         <button
@@ -121,6 +115,12 @@ export function CardCompletionScreen({
         {shareNote ? (
           <p className="px-2 text-center font-raleway text-[0.58rem] font-extralight leading-relaxed tracking-[0.04em] text-gold-muted/70">
             {shareNote}
+          </p>
+        ) : null}
+
+        {fallbackText ? (
+          <p className="max-h-32 w-full overflow-y-auto rounded-xl border border-gold/20 bg-gold/[0.04] px-3 py-2 text-left font-raleway text-[0.55rem] leading-relaxed whitespace-pre-line text-gold-muted/80">
+            {fallbackText}
           </p>
         ) : null}
 
