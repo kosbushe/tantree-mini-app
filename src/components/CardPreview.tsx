@@ -1,8 +1,7 @@
 import Image from "next/image";
-import Link from "next/link";
 
 import { getCardArtPath, hasCardArt } from "@/lib/cards";
-import { getAppShareUrl } from "@/lib/share/urls";
+import { getMiniAppEntryUrl } from "@/lib/share/urls";
 import type { Card } from "@/types/card";
 
 interface CardPreviewProps {
@@ -10,7 +9,7 @@ interface CardPreviewProps {
 }
 
 export function CardPreview({ card }: CardPreviewProps) {
-  const appUrl = getAppShareUrl();
+  const miniAppUrl = getMiniAppEntryUrl();
 
   return (
     <div className="flex min-h-dvh flex-col items-center bg-black px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))]">
@@ -51,13 +50,14 @@ export function CardPreview({ card }: CardPreviewProps) {
       </div>
 
       <div className="flex w-full max-w-sm shrink-0 flex-col items-center gap-3">
-        {appUrl ? (
-          <Link
-            href={appUrl}
+        {miniAppUrl ? (
+          <a
+            href={miniAppUrl}
+            rel="noopener noreferrer"
             className="flex w-full items-center justify-center rounded-full border border-[#c5a059]/55 bg-[#c5a059]/12 px-6 py-3.5 text-center font-raleway text-[0.62rem] font-normal uppercase tracking-[0.2em] text-[#f5e6c8] transition-all hover:border-[#c5a059]/80 hover:bg-[#c5a059]/20"
           >
             Вытянуть свою карту
-          </Link>
+          </a>
         ) : null}
         <p className="text-center font-raleway text-[0.55rem] font-extralight uppercase tracking-[0.22em] text-zinc-600">
           by Ksenia Bushe

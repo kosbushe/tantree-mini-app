@@ -10,6 +10,11 @@ function joinUrl(base: string, path: string): string {
 
 /** App invite link inside share text: bot link preferred, then site URL. */
 export function getAppShareUrl(): string {
+  return getMiniAppEntryUrl();
+}
+
+/** CTA on public /card/[id]: open Telegram Mini App, not the bare web app. */
+export function getMiniAppEntryUrl(): string {
   const botUrl = process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL;
   if (botUrl) {
     return trimTrailingSlash(botUrl);
