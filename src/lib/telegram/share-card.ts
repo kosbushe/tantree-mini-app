@@ -1,86 +1,93 @@
 import { getCardArtPath } from "@/lib/cards";
+import { prepareCardForReels } from "@/lib/share/reels";
+import {
+  buildAppInviteText,
+  buildCardShareText,
+  buildReelsCaption,
+} from "@/lib/share/text";
+import {
+  shareCardToTelegramStory,
+  shareViaTelegramChat,
+} from "@/lib/share/telegram";
+import {
+  getAppShareUrl,
+  getCardArtAbsoluteUrl,
+  getCardShareUrl,
+} from "@/lib/share/urls";
 import type { Card } from "@/types/card";
 
-interface TelegramShareWebApp {
-  shareToStory?: (
-    mediaUrl: string,
-    params?: { text?: string; widget_link?: { url: string; name: string } },
-  ) => void;
-  openTelegramLink?: (url: string) => void;
-  isVersionAtLeast?: (version: string) => boolean;
-}
+export { buildCardShareText } from "@/lib/share/text";
 
-function getCardArtAbsoluteUrl(cardId: number): string {
-  const origin =
-    typeof window !== "undefined" ? window.location.origin : "";
-  return `${origin}${getCardArtPath(cardId)}`;
-}
+export type ShareResult = {
+  ok: boolean;
+  message: string;
+};
 
-function getBotShareUrl(): string {
-  if (typeof window === "undefined") {
-    return "";
-  }
-
-  return process.env.NEXT_PUBLIC_TELEGRAM_BOT_URL ?? window.location.href;
-}
-
-function buildTelegramShareLink(text: string): string {
-  const botUrl = getBotShareUrl();
-  return `https://t.me/share/url?url=${encodeURIComponent(botUrl)}&text=${encodeURIComponent(text)}`;
-}
-
-export function buildCardShareText(card: Card): string {
-  return [
-    `TANTREE · ${card.title}`,
-    "",
-    `«${card.quote}»`,
-    `— ${card.author}`,
-    "",
-    `🎯 ${card.focus}`,
-    "",
-    "by Ksenia Bushe",
-  ].join("\n");
-}
-
-export async function shareCardToTelegram(card: Card): Promise<boolean> {
-  const webApp = window.Telegram?.WebApp as TelegramShareWebApp | undefined;
-
+export async function shareCardWithFriend(card: Card): Promise<ShareResult> {
   const text = buildCardShareText(card);
-  const mediaUrl = getCardArtAbsoluteUrl(card.id);
+  const url = getCardShareUrl(card.id);
+  const shared = await shareViaTelegramChat(text, url);
 
-  if (webApp && webApp.isVersionAtLeast && webApp.isVersionAtLeast("7.8")) {
-    webApp.shareToStory?.(mediaUrl, {
-      text: `TANTREE · ${card.title}`,
-      widget_link: {
-        url: window.location.href,
-        name: "TANTREE",
-      },
-    });
-    return true;
+  return {
+    ok: shared,
+    message: shared
+      ? "Выберите чат — друг получит ссылку на эту карту"
+      : "Скопировали текст и ссылку на карту — вставьте в чат",
+  };
+}
+
+export async function shareAppWithFriend(): Promise<ShareResult> {
+  const text = buildAppInviteText();
+  const url = getAppShareUrl("share_app_invite");
+  const shared = await shareViaTelegramChat(text, url);
+
+  return {
+    ok: shared,
+    message: shared
+      ? "Выберите чат — друг получит ссылку на приложение"
+      : "Скопировали приглашение — отправьте другу",
+  };
+}
+
+export async function shareCardForSocial(card: Card): Promise<ShareResult> {
+  const appUrl = getAppShareUrl("share_story");
+  const mediaUrl = getCardArtAbsoluteUrl(card.id, getCardArtPath(card.id));
+  const storyText = `TANTREE · ${card.title}`;
+
+  const sharedToStory = shareCardToTelegramStory(mediaUrl, storyText, appUrl);
+  if (sharedToStory) {
+    return {
+      ok: true,
+      message:
+        "Откройте редактор Stories — ссылка ведёт в приложение, друг пройдёт свой путь",
+    };
   }
 
-  if (webApp?.openTelegramLink) {
-    webApp.openTelegramLink(buildTelegramShareLink(text));
-    return true;
+  const { downloaded, captionCopied } = await prepareCardForReels(card);
+
+  if (downloaded && captionCopied) {
+    return {
+      ok: true,
+      message:
+        "Картинка сохранена, текст с ссылкой на приложение скопирован. Загрузите в Reels или Stories",
+    };
   }
 
-  if (typeof navigator.share === "function") {
-    try {
-      await navigator.share({
-        title: `TANTREE — ${card.title}`,
-        text,
-        url: window.location.href,
-      });
-      return true;
-    } catch {
-      return false;
-    }
+  if (captionCopied) {
+    return {
+      ok: true,
+      message: `Текст скопирован (${buildReelsCaption(card).slice(0, 40)}…). Сохраните картинку карты вручную`,
+    };
   }
 
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(text);
-    return true;
-  }
+  return {
+    ok: false,
+    message: "Не удалось подготовить материалы — попробуйте ещё раз",
+  };
+}
 
-  return false;
+/** @deprecated Use shareCardForSocial instead */
+export async function shareCardToTelegram(card: Card): Promise<boolean> {
+  const result = await shareCardForSocial(card);
+  return result.ok;
 }
