@@ -1,6 +1,10 @@
 import type { Card } from "@/types/card";
 
-import { getAppShareUrl, getCardShareUrl } from "@/lib/share/urls";
+import {
+  getAppShareUrl,
+  getCardShareUrl,
+  getSocialChannelUrl,
+} from "@/lib/share/urls";
 
 export function buildShareTitle(card: Card): string {
   return `Карта Tantree: ${card.title}`;
@@ -50,7 +54,7 @@ export function buildWebShareText(card: Card): string {
 }
 
 export function buildReelsCaption(card: Card): string {
-  const appUrl = getAppShareUrl();
+  const channelUrl = getSocialChannelUrl();
 
   const lines = [
     `TANTREE · ${card.title}`,
@@ -58,11 +62,8 @@ export function buildReelsCaption(card: Card): string {
     `«${card.quote}»`,
     "",
     "Вытяни свою карту дня и пройди свой путь 👇",
+    channelUrl,
   ];
-
-  if (appUrl) {
-    lines.push(appUrl);
-  }
 
   lines.push("", "#tantree #картынатен #осознанность");
 

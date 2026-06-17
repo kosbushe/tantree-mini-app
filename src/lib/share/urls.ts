@@ -1,3 +1,5 @@
+import { TANTREE_CHANNEL_URL } from "@/lib/telegram/start-message";
+
 function trimTrailingSlash(value: string): string {
   return value.replace(/\/+$/, "");
 }
@@ -11,6 +13,11 @@ function joinUrl(base: string, path: string): string {
 /** App invite link inside share text: bot link preferred, then site URL. */
 export function getAppShareUrl(): string {
   return getMiniAppEntryUrl();
+}
+
+/** Channel link for Stories / Reels captions and story widget. */
+export function getSocialChannelUrl(): string {
+  return TANTREE_CHANNEL_URL;
 }
 
 /** CTA on public /card/[id]: open Telegram Mini App, not the bare web app. */

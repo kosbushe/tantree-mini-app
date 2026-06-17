@@ -2,24 +2,31 @@ import { getCardArtPath } from "@/lib/cards";
 import { prepareCardForReels } from "@/lib/share/reels";
 import { buildReelsCaption } from "@/lib/share/text";
 import { shareCardToTelegramStory } from "@/lib/share/telegram";
-import { getAppShareUrl, getCardArtAbsoluteUrl } from "@/lib/share/urls";
+import {
+  getCardArtAbsoluteUrl,
+  getSocialChannelUrl,
+} from "@/lib/share/urls";
 import { shareCard, type ShareResult } from "@/lib/share/web-share";
 import type { Card } from "@/types/card";
 
 export { shareCard, type ShareResult };
 
 export async function shareCardForSocial(card: Card): Promise<ShareResult> {
-  const appUrl = getAppShareUrl();
+  const channelUrl = getSocialChannelUrl();
   const mediaUrl = getCardArtAbsoluteUrl(getCardArtPath(card.id));
   const storyText = `TANTREE · ${card.title}`;
 
-  if (appUrl) {
-    const sharedToStory = shareCardToTelegramStory(mediaUrl, storyText, appUrl);
+  if (channelUrl) {
+    const sharedToStory = shareCardToTelegramStory(
+      mediaUrl,
+      storyText,
+      channelUrl,
+    );
     if (sharedToStory) {
       return {
         ok: true,
         message:
-          "Откройте редактор Stories — ссылка ведёт в приложение, друг пройдёт свой путь",
+          "Откройте редактор Stories — ссылка ведёт в канал TANTREE, друг пройдёт свой путь",
       };
     }
   }
@@ -30,7 +37,7 @@ export async function shareCardForSocial(card: Card): Promise<ShareResult> {
     return {
       ok: true,
       message:
-        "Картинка сохранена, текст с ссылкой на приложение скопирован. Загрузите в Reels или Stories",
+        "Картинка сохранена, текст с ссылкой на канал скопирован. Загрузите в Reels или Stories",
     };
   }
 
